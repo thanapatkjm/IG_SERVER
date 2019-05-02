@@ -12,6 +12,6 @@ class UserImage(models.Model):
 
 class Comment(models.Model):
     post = models.ForeignKey(UserImage,on_delete=models.CASCADE)
-    user = models.TextField()
+    user = models.TextField(default=User.username)
     time_post = models.DateTimeField(default=datetime.now)
     comm = models.TextField()
