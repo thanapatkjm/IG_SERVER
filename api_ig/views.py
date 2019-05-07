@@ -5,36 +5,65 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
-
+from django.contrib.auth import authenticate
 from .models import UserImage, Comment
 from .serializers import Get_userimage ,Get_comment,Create_User
 from django.http import JsonResponse
 import json
 from django.contrib.auth.models import User as UserAuth
+from rest_framework.parsers import FileUploadParser
+
+
+class Get_all_user(APIView):
+    def get(self,request):
+        all_user = UserAuth.objects.all()
+        data_array = []
+        for each in all_user:
+            data = {"id":each.id,
+                    "name":each.username}
+            data_array.append(data)
+        print(data_array)
+        return Response(data_array)
 
 class Register(APIView):
     def post(self, request, *args, **kwargs):
-        print("7777777777777777777777777777")
         print(request.body)
         json_data = json.loads(request.body)
         print(json_data['password'])
         create_user = Create_User(data=json_data)
         if create_user.is_valid():
-            print("111111111111111111111111111")
             create_user.save()
             return Response(create_user.data, status=status.HTTP_201_CREATED)
         else:
-            print("000000000000000000000000000")
             return Response(create_user.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class Get_Auth(APIView):
-    def get(self,request):
-        username = self.request.query_params.get('username')
-        password = self.request.query_params.get('password')
-        print(username+"   "+password)
+class Get_Auth(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        print("000000000000000000000000000")
+        auth = authenticate(self.request, username=json.loads(request.body)['username'],
+                                     password=json.loads(request.body)['password']),
+        print("+++"+json.loads(request.body)['username']+"+++++"+json.loads(request.body)['password'])
+        print(auth)
+        if auth!=(None,):
+            print("111111111111111111111111111")
+            return Response({
+                'user': json.loads(request.body)['username'],
+                'token': True
+            })
+        else:
+            print("7777777777777777777777777777")
+            return Response({
+                'user': json.loads(request.body)['username'],
+                'token': False
+            })
 
 class Userimage_viewSet(APIView):
+
     def get(self,request):
         user_id = self.request.query_params.get('user')
         if user_id:
@@ -44,14 +73,22 @@ class Userimage_viewSet(APIView):
         else:
             data_send =  UserImage.objects.order_by('-time_post')
             serializer = Get_userimage(data_send, many=True)
-            return Response(serializer.data)
+            print("-----------------")
+            data = serializer.data
+            for eachPic in data:
+                user = UserAuth.objects.get(id=eachPic['user'])
+                eachPic['username'] = user.username
+                print(eachPic)
+            return Response(data)
 
     def post(self,request):
+        # parser_class = (FileUploadParser,)
+        print("111111111111111111111111111")
+        print(request.data)
         userimage = Get_userimage(data=request.data)
         if userimage.is_valid():
             userimage.save()
             return Response(userimage.data, status=status.HTTP_201_CREATED)
-
         else:
             return Response(userimage.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -70,6 +107,8 @@ class Comment_viewSet(APIView):
             return Response(serializer.data)
 
     def post(self,request):
+        
+        # user ,comm, post
         username = self.request.user.get_username()
         if username:
             Comment.objects.create()
