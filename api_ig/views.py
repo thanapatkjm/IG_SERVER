@@ -51,14 +51,18 @@ class Get_Auth(ObtainAuthToken):
         print(auth)
         if auth!=(None,):
             print("111111111111111111111111111")
+            use = UserAuth.objects.get(username=json.loads(request.body)['username'])
+            user_id = use.id
             return Response({
                 'user': json.loads(request.body)['username'],
+                'user_id': user_id,
                 'token': True
             })
         else:
             print("7777777777777777777777777777")
             return Response({
                 'user': json.loads(request.body)['username'],
+                'user_id': "",
                 'token': False
             })
 
@@ -82,8 +86,6 @@ class Userimage_viewSet(APIView):
             return Response(data)
 
     def post(self,request):
-        # parser_class = (FileUploadParser,)
-        print("111111111111111111111111111")
         print(request.data)
         userimage = Get_userimage(data=request.data)
         if userimage.is_valid():
