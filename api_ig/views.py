@@ -77,12 +77,10 @@ class Userimage_viewSet(APIView):
         else:
             data_send =  UserImage.objects.order_by('-time_post')
             serializer = Get_userimage(data_send, many=True)
-            print("-----------------")
             data = serializer.data
             for eachPic in data:
                 user = UserAuth.objects.get(id=eachPic['user'])
                 eachPic['username'] = user.username
-                print(eachPic)
             return Response(data)
 
     def post(self,request):
@@ -111,11 +109,19 @@ class Comment_viewSet(APIView):
     def post(self,request):
         
         # user ,comm, post
-        username = self.request.user.get_username()
-        if username:
-            Comment.objects.create()
-            print("user = :"+username)
-            serializer.save(user=username)
+        print(request.data)
+        comment = Get_comment(data=request.data)
+        if comment.is_valid():
+            comment.save()
+            return Response(comment.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(comment.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # username = self.request.user.get_username()
+        # if username:
+        #     Comment.objects.create()
+        #     print("user = :"+username)
+        #     serializer.save(user=username)
 
 
 
